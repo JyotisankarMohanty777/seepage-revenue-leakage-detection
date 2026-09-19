@@ -33,6 +33,9 @@ SQL Server, Python (Pandas, NumPy, scikit-learn, Faker), Jupyter Notebook, Power
 ├── powerbi/         → Dashboard (.pbix)
 └── README.md
 
+## Power BI Report
+<img width="1155" height="657" alt="Screenshot 2026-09-19 120526" src="https://github.com/user-attachments/assets/35cb3eb3-d356-4097-8e55-e1cbf063ca51" />
+
 
 
 
