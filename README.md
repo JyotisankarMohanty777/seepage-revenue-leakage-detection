@@ -27,12 +27,13 @@ Subscription businesses lose an estimated 5-10% of revenue to "silent" billing e
 SQL Server, Python (Pandas, NumPy, scikit-learn, Faker), Jupyter Notebook, Power BI
 
 ## Project Structure
-​​```
+​​
 ├── notebooks/       → Full analysis notebook
 ├── sql/             → Schema creation + leakage detection query
 ├── powerbi/         → Dashboard (.pbix)
 └── README.md
-```
+
+
 
 
 ## Limitations
