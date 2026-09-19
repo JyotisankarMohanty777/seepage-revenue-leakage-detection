@@ -1,0 +1,79 @@
+-- =====================================================
+-- SEEPAGE: Revenue Leakage Detection
+-- Schema creation and core leakage detection query
+-- =====================================================
+
+-- 1. SCHEMA
+
+CREATE TABLE Customers (
+    CustomerID INT PRIMARY KEY IDENTITY(1,1),
+    CustomerName VARCHAR(100),
+    Segment VARCHAR(50),
+    SignupDate DATE
+);
+
+CREATE TABLE Subscription_Plans (
+    PlanID INT PRIMARY KEY IDENTITY(1,1),
+    PlanName VARCHAR(50),
+    MonthlyPrice DECIMAL(10,2)
+);
+
+CREATE TABLE Contracts (
+    ContractID INT PRIMARY KEY IDENTITY(1,1),
+    CustomerID INT FOREIGN KEY REFERENCES Customers(CustomerID),
+    PlanID INT FOREIGN KEY REFERENCES Subscription_Plans(PlanID),
+    StartDate DATE,
+    DiscountPercent DECIMAL(5,2) DEFAULT 0,
+    DiscountEndDate DATE NULL,
+    ExpectedMonthlyAmount DECIMAL(10,2)
+);
+
+CREATE TABLE Invoices (
+    InvoiceID INT PRIMARY KEY IDENTITY(1,1),
+    CustomerID INT FOREIGN KEY REFERENCES Customers(CustomerID),
+    ContractID INT FOREIGN KEY REFERENCES Contracts(ContractID),
+    InvoiceDate DATE,
+    BilledAmount DECIMAL(10,2),
+    PaymentStatus VARCHAR(20)
+);
+
+-- 2. CORE LEAKAGE DETECTION QUERY
+-- Compares expected billing (Contracts) vs actual billing (Invoices)
+-- and categorizes every mismatch
+
+SELECT 
+    i.InvoiceID,
+    i.CustomerID,
+    c.Segment,
+    i.ContractID,
+    i.InvoiceDate,
+    i.BilledAmount,
+    i.PaymentStatus,
+    ct.DiscountEndDate,
+    ct.ExpectedMonthlyAmount AS DiscountedExpected,
+    p.MonthlyPrice AS FullPrice,
+    CASE 
+        WHEN ct.DiscountEndDate IS NOT NULL 
+             AND i.InvoiceDate > ct.DiscountEndDate 
+             AND i.BilledAmount < p.MonthlyPrice
+        THEN p.MonthlyPrice
+        ELSE ct.ExpectedMonthlyAmount
+    END AS TrueExpectedAmount,
+    CASE 
+        WHEN i.PaymentStatus = 'Failed' THEN 'Failed Payment - No Retry'
+        WHEN ct.DiscountEndDate IS NOT NULL 
+             AND i.InvoiceDate > ct.DiscountEndDate 
+             AND ABS(i.BilledAmount - ct.ExpectedMonthlyAmount) < 1
+        THEN 'Expired Discount Still Applied'
+        WHEN i.BilledAmount < (
+            CASE 
+                WHEN ct.DiscountEndDate IS NOT NULL AND i.InvoiceDate > ct.DiscountEndDate 
+                THEN p.MonthlyPrice ELSE ct.ExpectedMonthlyAmount 
+            END) - 1
+        THEN 'Billing Error - Undercharged'
+        ELSE 'No Leakage'
+    END AS LeakageCategory
+FROM Invoices i
+JOIN Contracts ct ON i.ContractID = ct.ContractID
+JOIN Customers c ON i.CustomerID = c.CustomerID
+JOIN Subscription_Plans p ON ct.PlanID = p.PlanID;
