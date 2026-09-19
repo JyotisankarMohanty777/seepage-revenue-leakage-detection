@@ -32,7 +32,7 @@ SQL Server, Python (Pandas, NumPy, scikit-learn, Faker), Jupyter Notebook, Power
 ├── sql/             → Schema creation + leakage detection query
 ├── powerbi/         → Dashboard (.pbix)
 └── README.md
-​​```
+```
 
 
 ## Limitations
